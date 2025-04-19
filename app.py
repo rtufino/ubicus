@@ -3,6 +3,8 @@ import csv
 import json
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 import sqlite3
 
@@ -13,7 +15,24 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 
-# Model definition
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Por favor inicie sesión para acceder a esta página.'
+
+# Model definitions
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sku = db.Column(db.String(50), unique=True, nullable=False)
@@ -30,16 +49,78 @@ class Product(db.Model):
             'row': self.row
         }
 
-# Create database tables
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Create database tables and default user
 def init_db():
     with app.app_context():
         db.create_all()
+        
+        # Create default user if it doesn't exist
+        if not User.query.filter_by(username='vendedor').first():
+            default_user = User(username='vendedor')
+            default_user.set_password('password123')
+            db.session.add(default_user)
+            db.session.commit()
+            print("Default user 'vendedor' created with password 'password123'")
 
 # Initialize the database
 init_db()
 
-# Routes
+# Authentication routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user, remember=True)
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+        else:
+            flash('Usuario o contraseña incorrectos', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not current_user.check_password(current_password):
+            flash('La contraseña actual es incorrecta', 'danger')
+        elif new_password != confirm_password:
+            flash('Las nuevas contraseñas no coinciden', 'danger')
+        elif len(new_password) < 6:
+            flash('La nueva contraseña debe tener al menos 6 caracteres', 'danger')
+        else:
+            current_user.set_password(new_password)
+            db.session.commit()
+            flash('Contraseña actualizada correctamente', 'success')
+            return redirect(url_for('index'))
+    
+    return render_template('change_password.html')
+
+# Application routes
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
@@ -59,15 +140,18 @@ def search():
         })
 
 @app.route('/products')
+@login_required
 def products():
     return render_template('products.html')
 
 @app.route('/api/products', methods=['GET'])
+@login_required
 def get_products():
     products = Product.query.all()
     return jsonify([product.to_dict() for product in products])
 
 @app.route('/api/products', methods=['POST'])
+@login_required
 def add_product():
     data = request.json
     
@@ -103,6 +187,7 @@ def add_product():
     return jsonify({'success': True, 'product': product.to_dict()})
 
 @app.route('/api/products/<int:id>', methods=['PUT'])
+@login_required
 def update_product(id):
     product = Product.query.get_or_404(id)
     data = request.json
@@ -137,6 +222,7 @@ def update_product(id):
     return jsonify({'success': True, 'product': product.to_dict()})
 
 @app.route('/api/products/<int:id>', methods=['DELETE'])
+@login_required
 def delete_product(id):
     product = Product.query.get_or_404(id)
     
@@ -146,6 +232,7 @@ def delete_product(id):
     return jsonify({'success': True})
 
 @app.route('/upload-csv', methods=['POST'])
+@login_required
 def upload_csv():
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file part'}), 400
