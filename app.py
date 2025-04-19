@@ -41,6 +41,7 @@ class User(UserMixin, db.Model):
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sku = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # New field for product name (required)
     display_case = db.Column(db.String(10), nullable=False)  # I, II, III, IV, etc.
     column = db.Column(db.Integer, nullable=False)  # 1 or 2
     row = db.Column(db.Integer, nullable=False)  # 1-7
@@ -49,6 +50,7 @@ class Product(db.Model):
         return {
             'id': self.id,
             'sku': self.sku,
+            'name': self.name,
             'display_case': self.display_case,
             'column': self.column,
             'row': self.row
@@ -147,18 +149,37 @@ def index():
 
 @app.route('/search', methods=['POST'])
 def search():
-    sku = request.form.get('sku').upper()  # Convert to uppercase for search
-    product = Product.query.filter_by(sku=sku).first()
+    search_term = request.form.get('search_term', '').strip()
+    search_type = request.form.get('search_type', 'sku')  # Default to SKU search
     
-    if product:
-        return jsonify({
-            'found': True,
-            'product': product.to_dict()
-        })
+    if search_type == 'sku':
+        # Search by SKU (case-insensitive)
+        product = Product.query.filter(Product.sku.ilike(f"{search_term.upper()}")).first()
+        
+        if product:
+            return jsonify({
+                'found': True,
+                'multiple': False,
+                'products': [product.to_dict()]
+            })
+        else:
+            return jsonify({
+                'found': False
+            })
     else:
-        return jsonify({
-            'found': False
-        })
+        # Search by name (case-insensitive) - return all matching products
+        products = Product.query.filter(Product.name.ilike(f"%{search_term}%")).order_by(Product.display_case).all()
+        
+        if products:
+            return jsonify({
+                'found': True,
+                'multiple': True,
+                'products': [product.to_dict() for product in products]
+            })
+        else:
+            return jsonify({
+                'found': False
+            })
 
 @app.route('/products')
 @login_required
@@ -168,8 +189,33 @@ def products():
 @app.route('/api/products', methods=['GET'])
 @login_required
 def get_products():
-    products = Product.query.all()
-    return jsonify([product.to_dict() for product in products])
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '')
+    
+    # Create base query
+    query = Product.query
+    
+    # Apply search filter if provided
+    if search:
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+    
+    # Get total count for pagination
+    total_count = query.count()
+    
+    # Apply pagination
+    products = query.order_by(Product.sku, Product.display_case, Product.row)\
+                   .paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Return paginated results
+    return jsonify({
+        'products': [product.to_dict() for product in products.items],
+        'total': total_count,
+        'page': page,
+        'per_page': per_page,
+        'pages': (total_count + per_page - 1) // per_page  # Ceiling division
+    })
 
 @app.route('/api/products', methods=['POST'])
 @login_required
@@ -182,7 +228,7 @@ def add_product():
         return jsonify({'success': False, 'message': 'El producto con este SKU ya existe'}), 400
     
     # Validate data
-    if not data['sku'] or not data['display_case'] or not data['column'] or not data['row']:
+    if not data['sku'] or not data['name'] or not data['display_case'] or not data['column'] or not data['row']:
         return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
     
     # Validate column and row
@@ -197,6 +243,7 @@ def add_product():
     # Create new product - store SKU in uppercase
     product = Product(
         sku=data['sku'].upper(),
+        name=data['name'],
         display_case=data['display_case'],
         column=column,
         row=row
@@ -220,7 +267,7 @@ def update_product(id):
             return jsonify({'success': False, 'message': 'La columna y la fila deben ser números. El producto con este SKU ya existe.'}), 400
     
     # Validate data
-    if not data['sku'] or not data['display_case'] or not data['column'] or not data['row']:
+    if not data['sku'] or not data['name'] or not data['display_case'] or not data['column'] or not data['row']:
         return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
     
     # Validate column and row
@@ -234,6 +281,7 @@ def update_product(id):
     
     # Update product - store SKU in uppercase
     product.sku = data['sku'].upper()
+    product.name = data['name']
     product.display_case = data['display_case']
     product.column = column
     product.row = row
@@ -280,12 +328,12 @@ def upload_csv():
         errors = []
         
         for row in reader:
-            if len(row) != 4:
+            if len(row) != 5:  # Now we require 5 columns including name
                 error_count += 1
                 errors.append(f"La fila tiene un número incorrecto de columnas: {row}")
                 continue
             
-            sku, display_case, column, row_num = row
+            sku, name, display_case, row_num, column = row  # Changed order: row before column
             sku = sku.upper()  # Convert SKU to uppercase
             
             # Validate data
@@ -312,6 +360,7 @@ def upload_csv():
             existing_product = Product.query.filter_by(sku=sku).first()
             if existing_product:
                 # Update existing product
+                existing_product.name = name
                 existing_product.display_case = display_case
                 existing_product.column = column
                 existing_product.row = row_num
@@ -319,6 +368,7 @@ def upload_csv():
                 # Create new product
                 product = Product(
                     sku=sku,
+                    name=name,
                     display_case=display_case,
                     column=column,
                     row=row_num
