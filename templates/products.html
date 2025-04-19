@@ -34,9 +34,10 @@ endblock %} {% block content %}
         <thead>
           <tr>
             <th>SKU</th>
+            <th>Nombre</th>
             <th>Vitrina</th>
-            <th>Columna</th>
             <th>Fila</th>
+            <th>Columna</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -72,6 +73,10 @@ endblock %} {% block content %}
             <input type="text" class="form-control" id="add-sku" required />
           </div>
           <div class="mb-3">
+            <label for="add-name" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="add-name" required />
+          </div>
+          <div class="mb-3">
             <label for="add-display-case" class="form-label">Vitrina</label>
             <select class="form-select" id="add-display-case" required>
               <option value="">Seleccione...</option>
@@ -88,14 +93,6 @@ endblock %} {% block content %}
             </select>
           </div>
           <div class="mb-3">
-            <label for="add-column" class="form-label">Columna</label>
-            <select class="form-select" id="add-column" required>
-              <option value="">Seleccione...</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </div>
-          <div class="mb-3">
             <label for="add-row" class="form-label">Fila</label>
             <select class="form-select" id="add-row" required>
               <option value="">Seleccione...</option>
@@ -106,6 +103,14 @@ endblock %} {% block content %}
               <option value="5">5</option>
               <option value="6">6</option>
               <option value="7">7</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="add-column" class="form-label">Columna</label>
+            <select class="form-select" id="add-column" required>
+              <option value="">Seleccione...</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
             </select>
           </div>
         </form>
@@ -143,6 +148,10 @@ endblock %} {% block content %}
             <input type="text" class="form-control" id="edit-sku" required />
           </div>
           <div class="mb-3">
+            <label for="edit-name" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="edit-name" required />
+          </div>
+          <div class="mb-3">
             <label for="edit-display-case" class="form-label">Vitrina</label>
             <select class="form-select" id="edit-display-case" required>
               <option value="I">I</option>
@@ -158,13 +167,6 @@ endblock %} {% block content %}
             </select>
           </div>
           <div class="mb-3">
-            <label for="edit-column" class="form-label">Columna</label>
-            <select class="form-select" id="edit-column" required>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </div>
-          <div class="mb-3">
             <label for="edit-row" class="form-label">Fila</label>
             <select class="form-select" id="edit-row" required>
               <option value="1">1</option>
@@ -174,6 +176,13 @@ endblock %} {% block content %}
               <option value="5">5</option>
               <option value="6">6</option>
               <option value="7">7</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="edit-column" class="form-label">Columna</label>
+            <select class="form-select" id="edit-column" required>
+              <option value="1">1</option>
+              <option value="2">2</option>
             </select>
           </div>
         </form>
@@ -215,21 +224,22 @@ endblock %} {% block content %}
               required
             />
             <div class="form-text">
-              El archivo CSV debe tener las columnas: SKU, Vitrina, Columna,
+              El archivo CSV debe tener las columnas: SKU, Nombre, Vitrina, Columna,
               Fila
               <br />
               <strong>Ejemplo:</strong>
               <pre class="mt-2 bg-light p-2 rounded">
-                SKU,VITRINA,COLUMNA,FILA
-                ABC123,I,1,3
-                DEF456,II,2,5
-                GHI789,III,1,2</pre>
+                SKU,NOMBRE,VITRINA,FILA,COLUMNA
+                ABC123,Producto A,I,3,1
+                DEF456,Producto B,II,5,2
+                GHI789,Producto C,III,2,1</pre>
               <small>
                 - SKU: Código del producto (se convertirá a mayúsculas
                 automáticamente)<br />
+                - NOMBRE: Nombre del producto<br />
                 - VITRINA: Número romano del I al X<br />
-                - COLUMNA: Debe ser 1 o 2<br />
-                - FILA: Debe ser un número del 1 al 7
+                - FILA: Debe ser un número del 1 al 7<br />
+                - COLUMNA: Debe ser 1 o 2
               </small>
             </div>
           </div>
@@ -303,11 +313,12 @@ endblock %} {% block content %}
     // Add product
     $("#save-product-btn").on("click", function () {
       const sku = $("#add-sku").val().trim();
+      const name = $("#add-name").val().trim();
       const displayCase = $("#add-display-case").val().trim();
       const column = $("#add-column").val();
       const row = $("#add-row").val();
 
-      if (!sku || !displayCase || !column || !row) {
+      if (!sku || !name || !displayCase || !column || !row) {
         alert("Por favor, complete todos los campos.");
         return;
       }
@@ -326,6 +337,7 @@ endblock %} {% block content %}
           contentType: "application/json",
           data: JSON.stringify({
             sku: sku,
+            name: name,
             display_case: displayCase,
             column: column,
             row: row,
@@ -368,12 +380,14 @@ endblock %} {% block content %}
     $(document).on("click", ".edit-product", function () {
       const id = $(this).data("id");
       const sku = $(this).data("sku");
+      const name = $(this).data("name");
       const displayCase = $(this).data("display-case");
       const column = $(this).data("column");
       const row = $(this).data("row");
 
       $("#edit-product-id").val(id);
       $("#edit-sku").val(sku);
+      $("#edit-name").val(name);
       $("#edit-display-case").val(displayCase);
       $("#edit-column").val(column);
       $("#edit-row").val(row);
@@ -385,12 +399,13 @@ endblock %} {% block content %}
     $("#update-product-btn").on("click", function () {
       const id = $("#edit-product-id").val();
       const sku = $("#edit-sku").val().trim();
+      const name = $("#edit-name").val().trim();
       const originalSku = $(`.edit-product[data-id="${id}"]`).data("sku");
       const displayCase = $("#edit-display-case").val().trim();
       const column = $("#edit-column").val();
       const row = $("#edit-row").val();
 
-      if (!sku || !displayCase || !column || !row) {
+      if (!sku || !name || !displayCase || !column || !row) {
         alert("Por favor, complete todos los campos.");
         return;
       }
@@ -403,21 +418,22 @@ endblock %} {% block content %}
             return;
           }
 
-          updateProductRequest(id, sku, displayCase, column, row);
+          updateProductRequest(id, sku, name, displayCase, column, row);
         });
       } else {
-        updateProductRequest(id, sku, displayCase, column, row);
+        updateProductRequest(id, sku, name, displayCase, column, row);
       }
     });
 
     // Function to send update product request
-    function updateProductRequest(id, sku, displayCase, column, row) {
+    function updateProductRequest(id, sku, name, displayCase, column, row) {
       $.ajax({
         url: `/api/products/${id}`,
         type: "PUT",
         contentType: "application/json",
         data: JSON.stringify({
           sku: sku,
+          name: name,
           display_case: displayCase,
           column: column,
           row: row,
@@ -547,15 +563,17 @@ endblock %} {% block content %}
           tableBody.append(`
                         <tr>
                             <td>${product.sku}</td>
+                            <td>${product.name}</td>
                             <td>${product.display_case}</td>
-                            <td>${product.column}</td>
                             <td>${product.row}</td>
+                            <td>${product.column}</td>
                             <td>
-                                <button class="btn btn-sm btn-primary edit-product" 
-                                    data-id="${product.id}" 
-                                    data-sku="${product.sku}" 
-                                    data-display-case="${product.display_case}" 
-                                    data-column="${product.column}" 
+                                <button class="btn btn-sm btn-primary edit-product"
+                                    data-id="${product.id}"
+                                    data-sku="${product.sku}"
+                                    data-name="${product.name}"
+                                    data-display-case="${product.display_case}"
+                                    data-column="${product.column}"
                                     data-row="${product.row}">
                                     <i class="bi bi-pencil"></i>
                                 </button>
