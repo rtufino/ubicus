@@ -1,9 +1,10 @@
 import os
 import csv
 import json
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 import sqlite3
@@ -20,6 +21,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Por favor inicie sesión para acceder a esta página.'
+login_manager.session_protection = "strong"
+
+# Configure permanent session lifetime
+app.permanent_session_lifetime = timedelta(days=365)  # 1 year
 
 # Model definitions
 class User(UserMixin, db.Model):
@@ -82,6 +87,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
+            # Make session permanent and set remember=True
+            session.permanent = True
             login_user(user, remember=True)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('index'))
