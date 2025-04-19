@@ -155,19 +155,31 @@ def search():
     if search_type == 'sku':
         # Search by SKU (case-insensitive)
         product = Product.query.filter(Product.sku.ilike(f"{search_term.upper()}")).first()
+        
+        if product:
+            return jsonify({
+                'found': True,
+                'multiple': False,
+                'products': [product.to_dict()]
+            })
+        else:
+            return jsonify({
+                'found': False
+            })
     else:
-        # Search by name (case-insensitive)
-        product = Product.query.filter(Product.name.ilike(f"%{search_term}%")).first()
-    
-    if product:
-        return jsonify({
-            'found': True,
-            'product': product.to_dict()
-        })
-    else:
-        return jsonify({
-            'found': False
-        })
+        # Search by name (case-insensitive) - return all matching products
+        products = Product.query.filter(Product.name.ilike(f"%{search_term}%")).order_by(Product.display_case).all()
+        
+        if products:
+            return jsonify({
+                'found': True,
+                'multiple': True,
+                'products': [product.to_dict() for product in products]
+            })
+        else:
+            return jsonify({
+                'found': False
+            })
 
 @app.route('/products')
 @login_required
