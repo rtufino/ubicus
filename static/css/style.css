@@ -1,0 +1,60 @@
+/* Custom styles for the Retail Product Organizer */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Card styling */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Table styling */
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* Button spacing in table */
+.btn-sm {
+    margin-right: 5px;
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+}
+
+/* Modal styling */
+.modal-header {
+    border-radius: 0;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .text-end {
+        text-align: left !important;
+        margin-top: 15px;
+    }
+    
+    .btn {
+        margin-bottom: 10px;
+        margin-right: 10px;
+    }
+}

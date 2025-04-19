@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Productos - Organizador de Productos{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Gestión de Productos</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+            <i class="bi bi-plus-circle"></i> Agregar Producto
+        </button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadCsvModal">
+            <i class="bi bi-file-earmark-arrow-up"></i> Cargar CSV
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">Lista de Productos</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Vitrina</th>
+                        <th>Columna</th>
+                        <th>Fila</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="products-table-body">
+                    <!-- Products will be loaded here dynamically -->
+                </tbody>
+            </table>
+        </div>
+        <div id="no-products" class="alert alert-info d-none">
+            No hay productos registrados. Agregue un nuevo producto o cargue un archivo CSV.
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Agregar Nuevo Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-product-form">
+                    <div class="mb-3">
+                        <label for="add-sku" class="form-label">SKU</label>
+                        <input type="text" class="form-control" id="add-sku" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-display-case" class="form-label">Vitrina</label>
+                        <select class="form-select" id="add-display-case" required>
+                            <option value="">Seleccione...</option>
+                            <option value="I">I</option>
+                            <option value="II">II</option>
+                            <option value="III">III</option>
+                            <option value="IV">IV</option>
+                            <option value="V">V</option>
+                            <option value="VI">VI</option>
+                            <option value="VII">VII</option>
+                            <option value="VIII">VIII</option>
+                            <option value="IX">IX</option>
+                            <option value="X">X</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-column" class="form-label">Columna</label>
+                        <select class="form-select" id="add-column" required>
+                            <option value="">Seleccione...</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-row" class="form-label">Fila</label>
+                        <select class="form-select" id="add-row" required>
+                            <option value="">Seleccione...</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="save-product-btn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Editar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-product-form">
+                    <input type="hidden" id="edit-product-id">
+                    <div class="mb-3">
+                        <label for="edit-sku" class="form-label">SKU</label>
+                        <input type="text" class="form-control" id="edit-sku" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-display-case" class="form-label">Vitrina</label>
+                        <select class="form-select" id="edit-display-case" required>
+                            <option value="">Seleccione...</option>
+                            <option value="I">I</option>
+                            <option value="II">II</option>
+                            <option value="III">III</option>
+                            <option value="IV">IV</option>
+                            <option value="V">V</option>
+                            <option value="VI">VI</option>
+                            <option value="VII">VII</option>
+                            <option value="VIII">VIII</option>
+                            <option value="IX">IX</option>
+                            <option value="X">X</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-column" class="form-label">Columna</label>
+                        <select class="form-select" id="edit-column" required>
+                            <option value="">Seleccione...</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-row" class="form-label">Fila</label>
+                        <select class="form-select" id="edit-row" required>
+                            <option value="">Seleccione...</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="update-product-btn">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload CSV Modal -->
+<div class="modal fade" id="uploadCsvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Cargar Archivo CSV</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="upload-csv-form">
+                    <div class="mb-3">
+                        <label for="csv-file" class="form-label">Archivo CSV</label>
+                        <input type="file" class="form-control" id="csv-file" accept=".csv" required>
+                        <div class="form-text">
+                            El archivo CSV debe tener las columnas: SKU, Vitrina, Columna, Fila
+                            <br>
+                            <strong>Ejemplo:</strong>
+                            <pre class="mt-2 bg-light p-2 rounded">
+SKU,VITRINA,COLUMNA,FILA
+ABC123,I,1,3
+DEF456,II,2,5
+GHI789,III,1,2</pre>
+                            <small>
+                                - SKU: Código del producto (se convertirá a mayúsculas automáticamente)<br>
+                                - VITRINA: Número romano del I al X<br>
+                                - COLUMNA: Debe ser 1 o 2<br>
+                                - FILA: Debe ser un número del 1 al 7
+                            </small>
+                        </div>
+                    </div>
+                </form>
+                <div id="csv-upload-results" class="d-none">
+                    <div class="alert alert-info">
+                        <h5>Resultados de la carga:</h5>
+                        <p id="csv-results-message"></p>
+                        <div id="csv-errors-container" class="d-none">
+                            <h6>Errores:</h6>
+                            <ul id="csv-errors-list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" id="upload-csv-btn">Cargar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar el producto con SKU <strong id="delete-sku"></strong>?</p>
+                <p>Esta acción no se puede deshacer.</p>
+                <input type="hidden" id="delete-product-id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Load products on page load
+        loadProducts();
+        
+        // Add product
+        $('#save-product-btn').on('click', function() {
+            const sku = $('#add-sku').val().trim();
+            const displayCase = $('#add-display-case').val().trim();
+            const column = $('#add-column').val();
+            const row = $('#add-row').val();
+            
+            if (!sku || !displayCase || !column || !row) {
+                alert('Por favor, complete todos los campos.');
+                return;
+            }
+            
+            // Check if SKU already exists before submitting
+            checkSkuExists(sku.toUpperCase(), function(exists) {
+                if (exists) {
+                    alert('El SKU ya existe. Por favor, utilice un SKU único.');
+                    return;
+                }
+                
+                // If SKU is unique, proceed with adding the product
+                $.ajax({
+                    url: '/api/products',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        sku: sku,
+                        display_case: displayCase,
+                        column: column,
+                        row: row
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            // Close modal and reset form
+                            $('#addProductModal').modal('hide');
+                            $('#add-product-form')[0].reset();
+                            
+                            // Reload products
+                            loadProducts();
+                        }
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON;
+                        alert(response.message || 'Error al agregar el producto.');
+                    }
+                });
+            });
+        });
+        
+        // Function to check if SKU exists
+        function checkSkuExists(sku, callback) {
+            $.ajax({
+                url: '/api/products',
+                type: 'GET',
+                success: function(products) {
+                    const exists = products.some(product => product.sku === sku);
+                    callback(exists);
+                },
+                error: function() {
+                    // If there's an error, assume SKU doesn't exist to allow submission
+                    callback(false);
+                }
+            });
+        }
+        
+        // Edit product - populate form
+        $(document).on('click', '.edit-product', function() {
+            const id = $(this).data('id');
+            const sku = $(this).data('sku');
+            const displayCase = $(this).data('display-case');
+            const column = $(this).data('column');
+            const row = $(this).data('row');
+            
+            $('#edit-product-id').val(id);
+            $('#edit-sku').val(sku);
+            $('#edit-display-case').val(displayCase);
+            $('#edit-column').val(column);
+            $('#edit-row').val(row);
+            
+            $('#editProductModal').modal('show');
+        });
+        
+        // Update product
+        $('#update-product-btn').on('click', function() {
+            const id = $('#edit-product-id').val();
+            const sku = $('#edit-sku').val().trim();
+            const originalSku = $(`.edit-product[data-id="${id}"]`).data('sku');
+            const displayCase = $('#edit-display-case').val().trim();
+            const column = $('#edit-column').val();
+            const row = $('#edit-row').val();
+            
+            if (!sku || !displayCase || !column || !row) {
+                alert('Por favor, complete todos los campos.');
+                return;
+            }
+            
+            // Only check for SKU uniqueness if the SKU has changed
+            if (sku.toUpperCase() !== originalSku) {
+                checkSkuExists(sku.toUpperCase(), function(exists) {
+                    if (exists) {
+                        alert('El SKU ya existe. Por favor, utilice un SKU único.');
+                        return;
+                    }
+                    
+                    updateProductRequest(id, sku, displayCase, column, row);
+                });
+            } else {
+                updateProductRequest(id, sku, displayCase, column, row);
+            }
+        });
+        
+        // Function to send update product request
+        function updateProductRequest(id, sku, displayCase, column, row) {
+            $.ajax({
+                url: `/api/products/${id}`,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    sku: sku,
+                    display_case: displayCase,
+                    column: column,
+                    row: row
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        // Close modal
+                        $('#editProductModal').modal('hide');
+                        
+                        // Reload products
+                        loadProducts();
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    alert(response.message || 'Error al actualizar el producto.');
+                }
+            });
+        }
+        
+        // Delete product - show confirmation
+        $(document).on('click', '.delete-product', function() {
+            const id = $(this).data('id');
+            const sku = $(this).data('sku');
+            
+            $('#delete-product-id').val(id);
+            $('#delete-sku').text(sku);
+            
+            $('#deleteConfirmModal').modal('show');
+        });
+        
+        // Confirm delete product
+        $('#confirm-delete-btn').on('click', function() {
+            const id = $('#delete-product-id').val();
+            
+            $.ajax({
+                url: `/api/products/${id}`,
+                type: 'DELETE',
+                success: function(response) {
+                    if (response.success) {
+                        // Close modal
+                        $('#deleteConfirmModal').modal('hide');
+                        
+                        // Reload products
+                        loadProducts();
+                    }
+                },
+                error: function() {
+                    alert('Error al eliminar el producto.');
+                }
+            });
+        });
+        
+        // Upload CSV
+        $('#upload-csv-btn').on('click', function() {
+            const fileInput = $('#csv-file')[0];
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor, seleccione un archivo CSV.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            $.ajax({
+                url: '/upload-csv',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // Display results
+                    $('#csv-results-message').text(response.message);
+                    
+                    if (response.errors && response.errors.length > 0) {
+                        // Display errors
+                        $('#csv-errors-list').empty();
+                        response.errors.forEach(function(error) {
+                            $('#csv-errors-list').append(`<li>${error}</li>`);
+                        });
+                        $('#csv-errors-container').removeClass('d-none');
+                    } else {
+                        $('#csv-errors-container').addClass('d-none');
+                    }
+                    
+                    $('#csv-upload-results').removeClass('d-none');
+                    
+                    // Reload products
+                    loadProducts();
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    alert(response.message || 'Error al cargar el archivo CSV.');
+                }
+            });
+        });
+        
+        // Reset modals on close
+        $('#addProductModal').on('hidden.bs.modal', function() {
+            $('#add-product-form')[0].reset();
+        });
+        
+        $('#uploadCsvModal').on('hidden.bs.modal', function() {
+            $('#upload-csv-form')[0].reset();
+            $('#csv-upload-results').addClass('d-none');
+        });
+    });
+    
+    // Function to load products
+    function loadProducts() {
+        $.ajax({
+            url: '/api/products',
+            type: 'GET',
+            success: function(products) {
+                const tableBody = $('#products-table-body');
+                tableBody.empty();
+                
+                if (products.length === 0) {
+                    $('#no-products').removeClass('d-none');
+                    return;
+                }
+                
+                $('#no-products').addClass('d-none');
+                
+                products.forEach(function(product) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${product.sku}</td>
+                            <td>${product.display_case}</td>
+                            <td>${product.column}</td>
+                            <td>${product.row}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-product" 
+                                    data-id="${product.id}" 
+                                    data-sku="${product.sku}" 
+                                    data-display-case="${product.display_case}" 
+                                    data-column="${product.column}" 
+                                    data-row="${product.row}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-product" 
+                                    data-id="${product.id}" 
+                                    data-sku="${product.sku}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function() {
+                alert('Error al cargar los productos.');
+            }
+        });
+    }
+</script>
+{% endblock %}

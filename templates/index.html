@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Buscar Producto - Organizador de Productos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Buscar Ubicación de Producto</h2>
+            </div>
+            <div class="card-body">
+                <form id="search-form" class="mb-4">
+                    <div class="mb-3">
+                        <label for="sku" class="form-label">SKU del Producto</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="sku" name="sku" placeholder="Ingrese el SKU del producto" required>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="search-results" class="d-none">
+                    <div class="alert alert-success">
+                        <h4 class="alert-heading">Producto Encontrado!</h4>
+                        <p>El producto se encuentra en la siguiente ubicación:</p>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>SKU:</strong> <span id="result-sku"></span></p>
+                                <p><strong>Vitrina:</strong> <span id="result-display-case"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Columna:</strong> <span id="result-column"></span></p>
+                                <p><strong>Fila:</strong> <span id="result-row"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="not-found" class="d-none">
+                    <div class="alert alert-danger">
+                        <h4 class="alert-heading">Producto No Encontrado</h4>
+                        <p>No se encontró ningún producto con el SKU proporcionado.</p>
+                        <hr>
+                        <p class="mb-0">Verifique el SKU e intente nuevamente o vaya a la sección de <a href="{{ url_for('products') }}">Productos</a> para agregar uno nuevo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#search-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const sku = $('#sku').val().trim(); // No need to convert to uppercase here as it's handled in the backend
+            
+            if (!sku) {
+                return;
+            }
+            
+            // Reset results
+            $('#search-results').addClass('d-none');
+            $('#not-found').addClass('d-none');
+            
+            // Send AJAX request
+            $.ajax({
+                url: '/search',
+                type: 'POST',
+                data: {
+                    sku: sku
+                },
+                success: function(response) {
+                    if (response.found) {
+                        // Display product information
+                        $('#result-sku').text(response.product.sku);
+                        $('#result-display-case').text(response.product.display_case);
+                        $('#result-column').text(response.product.column);
+                        $('#result-row').text(response.product.row);
+                        $('#search-results').removeClass('d-none');
+                    } else {
+                        // Display not found message
+                        $('#not-found').removeClass('d-none');
+                    }
+                },
+                error: function() {
+                    alert('Error al buscar el producto. Por favor, intente nuevamente.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
