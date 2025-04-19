@@ -158,20 +158,20 @@ def add_product():
     # Check if product with this SKU already exists
     existing_product = Product.query.filter_by(sku=data['sku']).first()
     if existing_product:
-        return jsonify({'success': False, 'message': 'Product with this SKU already exists'}), 400
+        return jsonify({'success': False, 'message': 'El producto con este SKU ya existe'}), 400
     
     # Validate data
     if not data['sku'] or not data['display_case'] or not data['column'] or not data['row']:
-        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+        return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
     
     # Validate column and row
     try:
         column = int(data['column'])
         row = int(data['row'])
         if column not in [1, 2] or row < 1 or row > 7:
-            return jsonify({'success': False, 'message': 'Invalid column or row value'}), 400
+            return jsonify({'success': False, 'message': 'Valor de columna o fila no válido'}), 400
     except ValueError:
-        return jsonify({'success': False, 'message': 'Column and row must be numbers'}), 400
+        return jsonify({'success': False, 'message': 'La columna y la fila deben ser números'}), 400
     
     # Create new product - store SKU in uppercase
     product = Product(
@@ -196,20 +196,20 @@ def update_product(id):
     if data['sku'] != product.sku:
         existing_product = Product.query.filter_by(sku=data['sku']).first()
         if existing_product:
-            return jsonify({'success': False, 'message': 'Product with this SKU already exists'}), 400
+            return jsonify({'success': False, 'message': 'La columna y la fila deben ser números. El producto con este SKU ya existe.'}), 400
     
     # Validate data
     if not data['sku'] or not data['display_case'] or not data['column'] or not data['row']:
-        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+        return jsonify({'success': False, 'message': 'Todos los campos son obligatorios'}), 400
     
     # Validate column and row
     try:
         column = int(data['column'])
         row = int(data['row'])
         if column not in [1, 2] or row < 1 or row > 7:
-            return jsonify({'success': False, 'message': 'Invalid column or row value'}), 400
+            return jsonify({'success': False, 'message': 'Valor de columna o fila no válido'}), 400
     except ValueError:
-        return jsonify({'success': False, 'message': 'Column and row must be numbers'}), 400
+        return jsonify({'success': False, 'message': 'La columna y la fila deben ser números'}), 400
     
     # Update product - store SKU in uppercase
     product.sku = data['sku'].upper()
@@ -235,15 +235,15 @@ def delete_product(id):
 @login_required
 def upload_csv():
     if 'file' not in request.files:
-        return jsonify({'success': False, 'message': 'No file part'}), 400
+        return jsonify({'success': False, 'message': 'No hay parte del archivo'}), 400
     
     file = request.files['file']
     
     if file.filename == '':
-        return jsonify({'success': False, 'message': 'No selected file'}), 400
+        return jsonify({'success': False, 'message': 'No hay ningún archivo seleccionado'}), 400
     
     if not file.filename.endswith('.csv'):
-        return jsonify({'success': False, 'message': 'File must be a CSV'}), 400
+        return jsonify({'success': False, 'message': 'El archivo debe ser un CSV'}), 400
     
     # Process CSV file
     try:
@@ -261,7 +261,7 @@ def upload_csv():
         for row in reader:
             if len(row) != 4:
                 error_count += 1
-                errors.append(f"Row has incorrect number of columns: {row}")
+                errors.append(f"La fila tiene un número incorrecto de columnas: {row}")
                 continue
             
             sku, display_case, column, row_num = row
@@ -275,16 +275,16 @@ def upload_csv():
                 # Provide more specific error messages
                 if column not in [1, 2]:
                     error_count += 1
-                    errors.append(f"Invalid column value for SKU {sku}. Column must be 1 or 2.")
+                    errors.append(f"El valor de columna para el SKU {sku} no es válido. La columna debe ser 1 o 2.")
                     continue
                 
                 if row_num < 1 or row_num > 7:
                     error_count += 1
-                    errors.append(f"Invalid row value for SKU {sku}. Row must be between 1 and 7.")
+                    errors.append(f"Valor de fila no válido para el SKU {sku}. La fila debe estar entre 1 y 7.")
                     continue
             except ValueError:
                 error_count += 1
-                errors.append(f"Column and row must be numbers for SKU {sku}")
+                errors.append(f"La columna y la fila deben ser números para el SKU {sku}")
                 continue
             
             # Check if product with this SKU already exists
@@ -310,7 +310,7 @@ def upload_csv():
         
         return jsonify({
             'success': True,
-            'message': f"Processed {success_count} products successfully, {error_count} errors",
+            'message': f"Se procesaron {success_count} productos con éxito, {error_count} errores",
             'errors': errors
         })
     
