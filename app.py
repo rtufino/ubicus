@@ -63,13 +63,27 @@ def init_db():
     with app.app_context():
         db.create_all()
         
-        # Create default user if it doesn't exist
-        if not User.query.filter_by(username='vendedor').first():
-            default_user = User(username='vendedor')
-            default_user.set_password('password123')
-            db.session.add(default_user)
-            db.session.commit()
-            print("Default user 'vendedor' created with password 'password123'")
+        try:
+            # Create default user if it doesn't exist
+            existing_user = User.query.filter_by(username='vendedor').first()
+            if not existing_user:
+                default_user = User(username='vendedor')
+                default_user.set_password('password123')
+                db.session.add(default_user)
+                try:
+                    db.session.commit()
+                    print("Default user 'vendedor' created with password 'password123'")
+                except Exception as e:
+                    # Handle potential race condition where another process created the user
+                    # between our check and commit
+                    db.session.rollback()
+                    print(f"Could not create default user, it may already exist: {e}")
+            else:
+                print("Default user 'vendedor' already exists")
+        except Exception as e:
+            # Roll back the session in case of any error
+            db.session.rollback()
+            print(f"Error during database initialization: {e}")
 
 # Initialize the database
 init_db()
