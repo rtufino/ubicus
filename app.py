@@ -205,7 +205,7 @@ def get_products():
     total_count = query.count()
     
     # Apply pagination
-    products = query.order_by(Product.display_case, Product.row, Product.column)\
+    products = query.order_by(Product.sku, Product.display_case, Product.row)\
                    .paginate(page=page, per_page=per_page, error_out=False)
     
     # Return paginated results

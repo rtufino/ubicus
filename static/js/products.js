@@ -1,7 +1,7 @@
 // Variables globales para paginación y búsqueda
 let currentPage = 1;
 let currentSearch = '';
-let itemsPerPage = 10;
+let itemsPerPage = 25;
 
 $(document).ready(function () {
   
