@@ -189,8 +189,33 @@ def products():
 @app.route('/api/products', methods=['GET'])
 @login_required
 def get_products():
-    products = Product.query.all()
-    return jsonify([product.to_dict() for product in products])
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '')
+    
+    # Create base query
+    query = Product.query
+    
+    # Apply search filter if provided
+    if search:
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+    
+    # Get total count for pagination
+    total_count = query.count()
+    
+    # Apply pagination
+    products = query.order_by(Product.display_case, Product.row, Product.column)\
+                   .paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Return paginated results
+    return jsonify({
+        'products': [product.to_dict() for product in products.items],
+        'total': total_count,
+        'page': page,
+        'per_page': per_page,
+        'pages': (total_count + per_page - 1) // per_page  # Ceiling division
+    })
 
 @app.route('/api/products', methods=['POST'])
 @login_required
